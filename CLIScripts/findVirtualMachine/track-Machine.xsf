@@ -1,0 +1,43 @@
+set var Xen "00:16:3e:"
+set var CLI.OUT " "
+show switch
+set var base_list1 $TCL(split ${CLI.OUT} "\n")
+set var Affichage $TCL(llength $base_list1)
+set var Compteur 0
+while ($Compteur < $Affichage) do
+	set var ligne $TCL(lindex $base_list1 $Compteur)
+	set var result $TCL(regexp -nocase {System Type:} $ligne)
+	if ($result == 1) then
+		set var base_list2 $TCL(split ${ligne} "-")
+		set var type $TCL(lindex $base_list2 1)
+		 set var result $TCL(regexp -nocase {24t} $type)
+		if ($result == 1) then
+			set var port 24
+		else
+			set var port 48
+		endif
+	endif
+	set var Compteur ($Compteur + 1)
+endwhile
+set var Compteur 1
+while ($Compteur <= $port) do 
+	set var CLI.OUT " "
+	show fdb port $Compteur
+	set var base_list1 $TCL(split ${CLI.OUT} "\n")
+	set var Affichage $TCL(llength $base_list1)
+	set var Affichage ($Affichage -9)
+	set var Compteur2 2 
+	while ($Compteur2 < $Affichage) do
+		set var ligne $TCL(lindex $base_list1 $Compteur2)
+		set var result $TCL(regexp -nocase ${Xen} $ligne)
+		if ($result == 1) then
+			set var base_list2 $TCL(split ${ligne} "  ")
+			set var Mac_address $TCL(lindex $base_list2 0)
+			show var  Mac_address
+			show var Compteur
+			create fdb mac-tracking entry $Mac_address
+		endif
+		set var Compteur2 ($Compteur2 + 1)
+	endwhile
+	set var Compteur ($Compteur + 1)
+endwhile

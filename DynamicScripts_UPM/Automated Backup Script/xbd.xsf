@@ -1,0 +1,144 @@
+# @METADATASTART
+#@DetailDescriptionStart
+#############################################################################
+#
+# Script        	: Automatic Backup Script 
+# Revision      	: 1.1
+# EXOS Version(s)  	: 12.3.x and Newer
+# Last Updated  	: April 19, 2010
+#
+# Purpose: 
+# Run automated back up on all scripts, including configuration, policies, and scripts. Benefits 
+# include simple rollback and configuration history.
+#
+# Note: The lack of whitespace in UPM is due to 5000 character limit in Dynamic scripts
+#
+# Author			: Extreme Extensibility Team
+# Contact			: info@extremenetworks.com
+# Contact			: www.ethernation.net (ExtremeXOS Forums)
+###############################################################################
+#  Change Log
+#
+# 	18 March 2009: Script Created
+#	19 April 2010: Added Change Log
+#	21 April 2010: Updated to include default config load for Interactive Recovery
+###############################################################################
+#@DetailDescriptionEnd
+
+enable cli scripting
+
+# Creating the Backup UPM
+create upm profile loginbackup
+enable cli scripting
+set var cli.out 0
+show switch
+set var sw_list $tcl(split ${cli.out} "\n")
+set var sw_backup $tcl(lindex $sw_list 25)
+set var sw_current $tcl(string replace $sw_backup 0 17 {})
+# Preconfigured TFTP Server. Please Set to your TFTP Server
+set var tftp 172.16.254.205
+# Preconfigured Virtual Router. Please Configure
+set var vrtr vr-default
+set var cntrl_pol 1
+set var cntrl_xsf 1
+set var cntrl_cfg 1
+set var cli.out 0
+show version
+set var base_list $tcl(split ${cli.out} "\n")
+set var serialidx $TCL(lsearch -glob $base_list *Switch*)
+set var serial $tcl(lindex $base_list $serialidx)
+set var serial $tcl(string replace $serial 0 26 {})
+set var serial $tcl(string replace $serial 11 200 {})
+set var baseSystemTime $TCL(clock seconds)
+set var systemTime $TCL(clock format $baseSystemTime -format {%H%M%S})
+set var yeardirectory $tcl(clock format $baseSystemTime -format {%Y})
+set var modirectory $tcl(clock format $baseSystemTime -format {%m})
+set var daydirectory $tcl(clock format $baseSystemTime -format {%d})
+set var filename $(serial)_$(systemTime)
+set var filenamelen $tcl(string bytelength $filename)
+set var cur_upload c$(serial).cfg
+del var "cli.out"
+set var cli.out 0
+show switch
+set var switch_list $TCL(split ${CLI.OUT} "\n")
+set var currcfg $tcl(lindex $switch_list 25)
+set var currcfg $tcl(string replace $currcfg 0 17 {})
+set var currcfg $tcl(string replace $currcfg 12 400 {})
+show var currcfg
+tftp put $tftp vr $vrtr $currcfg $cur_upload
+del var "cli.out"
+set var cli.out 0
+ls
+set var base_list $TCL(join ${CLI.OUT})
+set var base_list $TCL(lsort $base_list)
+set var base_list $TCL(split $base_list)
+set var cntrl_pol $TCL(regexp -nocase {pol} $base_list)
+if ($cntrl_pol == 1) then
+while ($cntrl_pol == 1) do
+set var policy $TCL(lsearch -glob $base_list *pol*)
+set var policyFile $TCL(lindex $base_list $policy)
+set var policyFileLen $TCL(string bytelength $policyFile)
+set var lencheck $tcl(expr $policyFileLen + $filenamelen)
+if ($lencheck > 30) then
+set var policylen $tcl(expr $lencheck - 34)
+set var policyFile $tcl(string replace $policyFile 0 $policylen {})
+create log entry "Length Error.File name for $policyFile exceeded 32 byte max length."
+create log entry " $policyFile truncated by $policylen characters."
+endif
+set var base_list $TCL(lreplace $base_list $policy $policy deleted)
+tftp put $tftp vr $vrtr $(policyFile) "$(yeardirectory)/$(modirectory)/$(daydirectory)/p$(filename)$(policyFile)"
+set var cntrl_pol $TCL(regexp -nocase {pol} $base_list)  
+create log entry "File exported to $tftp Server as p$(filename)$(policyFile) "
+endwhile
+endif
+set var cntrl_xsf $TCL(regexp -nocase {xsf} $base_list)
+if ($cntrl_xsf == 1) then
+while ($cntrl_xsf == 1) do
+set var script $TCL(lsearch -glob $base_list *xsf*)
+set var scriptFile $TCL(lindex $base_list $script)
+set var scriptFileLen $TCL(string bytelength $scriptFile)
+set var lenchecks $tcl(expr $scriptFileLen + $filenamelen)
+if ($lenchecks > 30) then
+set var scriptlen $tcl(expr $lenchecks - 34)
+set var scriptFile $tcl(string replace $scriptFile 0 $scriptLen {})
+create log entry "Length error.File name for $scriptFile exceeded 32 byte max length."
+create log entry "$scriptFile truncated by $scriptlen characters." 
+endif
+set var base_list $TCL(lreplace $base_list $script $script deleted)
+tftp put $tftp vr $vrtr $(scriptFile) "$(yeardirectory)/$(modirectory)/$(daydirectory)/s$(filename)$(scriptFile)"
+set var cntrl_xsf $TCL(regexp -nocase {xsf} $base_list)
+create log entry "File exported to $tftp Server as s$(filename)$(scriptFile) "
+endwhile
+endif
+set var cntrl_cfg $TCL(regexp -nocase {cfg} $base_list)
+if ($cntrl_cfg == 1) then
+while ($cntrl_cfg == 1) do
+set var configcfg $TCL(lsearch -glob $base_list *cfg*)
+set var configcfgFile $TCL(lindex $base_list $configcfg)
+set var configcfgFileLen $TCL(string bytelength $configcfgFile)
+set var lencheckc $tcl(expr $configcfgFileLen + $filenamelen)
+if ($lencheckc > 30) then
+set var configcfglen $tcl(expr $lencheckc - 34)
+set var configcfgFile $tcl(string replace $configcfgFile 0 $configcfglen {})
+create log entry "Length error. File name for $configcfgFile exceeded 32 byte max length."
+create log entry "$configcfgFile truncated by $configcfglen characters." 
+endif
+set var base_list $TCL(lreplace $base_list $configcfg $configcfg deleted)
+tftp put $tftp vr $vrtr $(configcfgFile) "$(yeardirectory)/$(modirectory)/$(daydirectory)/c$(serial).cfg
+set var cntrl_cfg $TCL(regexp -nocase {cfg} $base_list)
+create log entry "File exported to $tftp Server as c$(filename)$(configcfgFile) "
+endwhile
+endif
+create log entry "Automated Backup Ran"
+.
+
+# Here we configure the UPM to have a liberal execution time.
+configure upm profile loginbackup maximum execution-time 1000
+create log target upm loginbackup
+create log filter autologfilter
+# This will trigger on any AuthPass. If you have Epicenter Modify this to match strings
+configure log filter autologfilter add event AAA.AuthPass
+configure log target upm loginbackup filter autologfilter
+enable log target upm loginbackup
+enable upm profile loginbackup
+create log entry "UPM loginbackup successfully created"

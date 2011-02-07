@@ -1,0 +1,11 @@
+#
+# Begin defaultdeny.pol
+#
+# Default Deny ACL.
+entry defaultdeny {
+	if {} 
+	then {deny;
+		count defaultdeny;}}
+#
+# End defaultdeny.pol
+#

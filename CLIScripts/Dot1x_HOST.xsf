@@ -1,0 +1,26 @@
+# @MetaDataStart
+# @ScriptDescription "This is a profile template for configuring role based access using user authentication events."
+# @VariableFieldLabel "Blocked Protocol"
+set var prot icmp
+# @VariableFieldLabel "Test2"
+set var test2 xxx
+# @VariableFieldLabel "Test3"
+set var test3 xxx
+# @MetaDataEnd
+
+if (!$match($EVENT.NAME,USER-AUTHENTICATED)) then
+	create log entry Dot1x-HOST_AUTH_START_$(EVENT.USER_PORT)
+	create log entry Configuring-ACL
+		create access-list $(EVENT.USER_PORT)_PingProtect "ethernet-source-address $(EVENT.USER_MAC);protocol icmp" "deny;log" non-permanent
+		configure access-list add $(EVENT.USER_PORT)_PingProtect first port $EVENT.USER_PORT		
+endif
+
+if (!$match($EVENT.NAME,USER-UNAUTHENTICATED)) then
+	create log entry Dot1x-HOST_UN-AUTH_START_$(EVENT.USER_PORT)
+	create log entry Removing_ACLs
+		configure access-list delete $(EVENT.USER_PORT)_PingProtect ports $EVENT.USER_PORT
+		delete access-list $(EVENT.USER_PORT)_PingProtect
+endif
+
+	create log entry Dot1x-HOST_END_$(EVENT.USER_PORT)
+

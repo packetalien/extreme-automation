@@ -1,0 +1,36 @@
+# XWindows ACLs.
+entry tcp6000 {
+	if {	protocol TCP;
+		destination-port 6000 - 6255;}
+	then {count tcp6000counter;}}
+# Uncomment the defaultdeny ACL to Block all other ports,
+# Otherwise, all other traffic will be allowed through.
+#entry defaultdeny {
+#	if {} then 
+#		{deny;
+#		count defaultdeny;}}
+#
+# RPC portmap CLEAR-FLow rule.
+entry tcp6000flowMax {
+	if {delta tcp6000counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "X-Windows traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp6000 QP3;
+		}
+	else {syslog "X-Windows traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp6000 QP1;
+		}}
+entry tcp6000flowMin {
+	if {delta tcp6000counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "X-Windows traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp6000;
+		}
+	else {syslog "X-Windows traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp6000;
+		}}
+#
+# End XWindows.pol
+#

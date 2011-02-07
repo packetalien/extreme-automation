@@ -1,0 +1,32 @@
+#
+# Begin TCPSYNACKFlood.pol
+# 
+# TCP SYN ACK Flood ACLs.
+entry tcpSynAckFloodacl {
+	if {protocol TCP;
+ 		tcp-flags SYN_ACK;}
+	then {count tcpsynackcounter; }}
+# TCP SYN ACK Flood CLEAR-Flow rules.
+entry tcpSynAckFloodflowMAX {
+	if {delta tcpsynackcounter > 100000;
+		period 2; 
+		hysteresis 99000;}
+	then {syslog "TCP SYN ACK FLOOD traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile tcpSynAckFloodacl QP3;
+		}
+	else {syslog "TCP SYN ACK FLOOD traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile tcpSynAckFloodacl QP1;
+		}}
+entry tcpSynAckFloodflowMin {
+	if {delta tcpsynackcounter > 1000;
+		period 2;
+		hysteresis 9000;}
+	then {syslog "TCP SYN ACK FLOOD traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add tcpSynAckFloodacl;
+		}
+	else {syslog "TCP SYN ACK FLOOD traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete tcpSynAckFloodacl;
+		}}
+#
+# End TCPSYNACKFlood.pol
+#

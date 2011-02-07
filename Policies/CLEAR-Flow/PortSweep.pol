@@ -1,0 +1,69 @@
+#
+# Begin PortSweep.pol
+#
+# Port Sweep ACLs.
+entry TCPPortSweepacl_syn {
+	if {	protocol TCP;
+ 		tcp-flags SYN;
+		destination-port 1 - 2200; }
+	then {count TCPportsweepsyncounter; }}
+entry TCPPortSweepacl_fin {
+	if {	protocol TCP;
+		tcp-flags 0x11;
+		source-port 1 - 2200; }
+	then {count TCPportsweepfincounter; }}
+entry UDPPortSweepacl {
+	if {	protocol UDP;
+		destination-port 1 - 2200; }
+	then {count UDPportsweepcounter; }}
+# Port Sweep CLEAR-Flow rules.
+entry TCPPortSweepflowMax {
+	if { 	delta-ratio TCPportsweepsyncounter TCPportsweepfincounter >= 0;
+		period 1; 
+		hysteresis 990;
+		min-value 1000;}
+	then {syslog "TCP PORT SWEEP traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile TCPPortSweepacl_syn QP3;
+		qosprofile TCPPortSweepacl_fin QP3;
+		}
+	else {syslog "TCP PORT SWEEP traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile TCPPortSweepacl_syn QP1;
+		qosprofile TCPPortSweepacl_fin QP1;
+		}}
+entry TCPPortSweepflowMin {
+	if {delta-ratio TCPportsweepsyncounter TCPportsweepfincounter >= 0;
+		period 1;
+		hysteresis 8;
+		min-value 10;}
+	then {syslog "TCP PORT SWEEP traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add TCPPortSweepacl_syn;
+		mirror add TCPPortSweepacl_fin;
+		}
+	else {syslog "TCP PORT SWEEP traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete TCPPortSweepacl_syn;
+		mirror delete TCPPortSweepacl_fin;
+		}}
+#
+entry UDPPortSweepflowMax {
+	if { 	delta UDPportsweepcounter > 1000;
+		period 1; 
+		hysteresis 990;}
+	then {syslog "UDP PORT SWEEP traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile UDPPortSweepacl QP3;
+		}
+	else {syslog "UDP PORT SWEEP traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile UDPPortSweepacl QP1;
+		}}
+entry UDPPortSweepflowMin {
+	if {delta UDPportsweepcounter > 10;
+		period 1;
+		hysteresis 8;}
+	then {syslog "UDP PORT SWEEP traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add UDPPortSweepacl;
+		}
+	else {syslog "UDP PORT SWEEP traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete UDPPortSweepacl;
+		}}
+#
+# End PortSweep.pol
+#

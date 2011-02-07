@@ -1,0 +1,28 @@
+# ICMP unreachable ACL.
+entry ICMPunreachable {
+	if 	{protocol ICMP;
+		icmp-type unreachable;} then {count ICMPunreachablecounter;}}
+# ICMP unreachable CLEAR-FLow rule.
+entry ICMPunreachableflowMax {
+	if {delta ICMPunreachablecounter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "ICMP unreachable traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile ICMPunreachable QP3;
+		}
+	else {syslog "ICMP unreachable traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile ICMPunreachable QP1;
+		}}
+entry ICMPunreachableflowMin {
+	if {delta ICMPunreachablecounter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "ICMP unreachable traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add ICMPunreachable;
+		}
+	else {syslog "ICMP unreachable traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete ICMPunreachable;
+		}}
+#
+# End ICMPunreachable.pol
+#

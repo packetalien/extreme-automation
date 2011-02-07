@@ -1,0 +1,28 @@
+#
+# Begin RFC2827.pol
+#
+# apply to traffic going outbound to the internet
+# RFC 2827 ACLs.
+entry rfc2827acl10 {
+	if 	{source-address 10.0.0.0/8;} then {count rfc2827c10;}}
+entry rfc2827acl172 {
+	if	{source-address 172.16.0.0/16;} then {count rfc2827c172;}}
+entry rfc2827acl192 {
+	if 	{source-address 192.168.0.0/16;} then {count rfc2827c192;}}
+entry rfc2827default {
+if {} then 
+{count rfc2827counter;}}
+# RFC 2827 CLEAR-Flow rule.
+entry rfc1918flow {
+	if {delta rfc2827counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "rfc2827 traffic detected outbound from switch, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		mirror add rfc2827default;
+		qosprofile rfc2827default QP3;}
+	else {syslog "rfc2827 traffic no longer outbound from switch, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		mirror delete rfc2827default;
+		qosprofile rfc2827default QP1;}}
+#
+# End RFC2827.pol
+#

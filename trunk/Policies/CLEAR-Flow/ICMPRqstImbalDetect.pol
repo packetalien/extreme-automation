@@ -1,0 +1,70 @@
+@description "ICMPRqstImbalDetect Example"
+
+##############################################################################
+#
+# Policy        : ICMPRqstImbalDetect
+# Revision      : 1.1
+# Last Updated  : March 27, 2008
+#
+# Purpose:  This policy provides a CLEAR-Flow monitoring example that
+#           inspects received Internet Control Message Protocol (ICMP)
+#           packets to spot route-down problems and IP address sweeps
+#           that can indicate network usage policy violations or mischievous
+#           activity.  Shown in this policy are three entry points:
+#  
+#           1.  ICMP echo request counter
+#           2.  ICMP unreachable counter
+#           3.  CLEAR-Flow delta-ratio expression for determining 
+#               ICMP imbalances.
+#     
+# Notes:    1.  The "mirror add ..." statement requires mirroring to be
+#               enabled in order for this statement to have any effect.
+#
+#           2.  The "permit" statement is the default condition and is shown
+#               for illustrative purposes.
+#
+#           3.  The ratio between ICMP requests and ICMP unreachables of 
+#               2000 per second is for illustrative purposes only.  The
+#               correct setting of this ratio should based on actual network
+#               activity.
+#
+##############################################################################
+
+##############################################################################
+# ICMP echo-request entry point
+##############################################################################
+
+entry ACL_ICMP_REQUEST {
+if {
+ 	protocol ICMP;  ICMP-type echo-request;
+
+}
+then {
+ 	count ICMP_REQUEST; permit;
+} }
+
+##############################################################################
+# ICMP unreachable entry point
+##############################################################################
+
+
+entry ACL_ICMP_UNREACHABLE {
+if {
+ 	protocol ICMP;  ICMP-type unreachable;
+}
+then {
+ 	count ICMP_UNREACHABLE; permit;
+} }
+
+##############################################################################
+# CLEAR-Flow ICMP imbalance check entry point
+##############################################################################
+
+entry ACL_ICMP_UN_LVL1 {
+if {
+ 	delta-ratio ICMP_REQUEST ICMP_UNREACHABLE > 10000; period 5;
+} then {
+ 	mirror add ICMP_UNREACHABLE;
+        snmptrap 8008 "ICMP_UN LVL 1";
+ 	syslog "ICMP_UN LVL 1" CRIT;
+} }

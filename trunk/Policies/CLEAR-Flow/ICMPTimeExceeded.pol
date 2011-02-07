@@ -1,0 +1,28 @@
+# ICMP time exceeded ACL.
+entry ICMPtimeexceeded {
+	if 	{protocol ICMP;
+		icmp-type time-exceeded;} then {count ICMPtimeexceededcounter;}}
+# ICMP time exceeded CLEAR-FLow rule.
+entry ICMPtimeexflowMax {
+	if {delta ICMPtimeexceededcounter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "ICMP time exceeded traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile ICMPtimeexceeded QP3;
+		}
+	else {syslog "ICMP time exceeded traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile ICMPtimeexceeded QP1;
+		}}
+entry ICMPtimeexflowMin {
+	if {delta ICMPtimeexceededcounter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "ICMP time exceeded traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add ICMPtimeexceeded;
+		}
+	else {syslog "ICMP time exceeded traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete ICMPtimeexceeded;
+		}}
+#
+# End ICMPtimeexceeded.pol
+#

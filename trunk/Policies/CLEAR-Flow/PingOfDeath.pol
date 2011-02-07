@@ -1,0 +1,32 @@
+#
+# Begin PingOfDeath.pol
+#
+# Ping Of Death ACL.
+entry PODacl {
+	if {protocol ICMP;
+		fragments;}
+	then {count podcounter; }}
+# Ping Of Death CLEAR-Flow rule.
+entry PODflowMax {
+	if {delta podcounter > 1000;
+		period 1;
+		hysteresis 990;}
+	then {syslog "PING OF DEATH traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile PODacl QP3;
+		}
+	else {syslog "PING OF DEATH traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile PODacl QP1;
+		}}
+entry PODflowMin {
+	if {delta podcounter > 10;
+		period 1;
+		hysteresis 9;}
+	then {syslog "PING OF DEATH traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add PODacl;
+		}
+	else {syslog "PING OF DEATH traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete PODacl;
+		}}
+#
+# End PingOfDeath.pol
+#

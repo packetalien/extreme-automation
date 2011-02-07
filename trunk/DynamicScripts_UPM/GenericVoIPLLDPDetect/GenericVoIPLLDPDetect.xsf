@@ -1,0 +1,233 @@
+enable cli scripting
+
+# @METADATASTART
+#@DetailDescriptionStart
+#############################################################################
+#
+# Script        : GenericVoIPLLDPDetect
+# Revision      : 1.1
+# Last Updated  : April 7, 2008
+#
+# Purpose:  This script is an example on how one would configure network
+#           parameters for VoIP phones that support LLDP but not 802.1x user
+#           authentication on ExtremeXOS(TM) edge switches.  This universal
+#           port script is triggered on the detection of a LLDP packet on 
+#           a port.  For VoIP phone device detection this script provisions
+#           the generic VoIP service through the following actions:
+#
+#           1.  Adds the port to a voice VLAN using tagged addressing
+#
+#           2.  Optionally enables SNMP LLDP traps
+#
+#           3.  Configures LLDP on the port with a specified diffserv code
+#               point (DSCP) value
+#
+#           4.  Configures POE settings on the port based on the detected
+#               device
+#
+#           5.  Optionally configures a QoS assignment for the port.
+#
+#           For VoIP phone device undetect this script performs the following
+#           actions:
+#
+#           1.  If SNMP LLDP traps were enabled, SNMP LLDP traps are
+#               disabled
+#
+#           2.  The LLDP configuration on the port is reset to the default
+#
+#           3.  The POE setting on the port is reset to the default
+#
+#           4.  If the port was assigned to a QoS profile, the QoS profile
+#               is unconfigured on the port.
+#
+#           ASSUMPTIONS:  
+#
+#           1.  LLDP must be enabled on the port for this script to work
+#               through the following command:
+#
+#                  "enable lldp ports <portlist>"
+#
+#           2.  The specified VLAN for voice traffic needs to be created
+#               prior to executing this script through the following
+#               command:
+#
+#                  "create vlan <voice_vlan_name>"
+#
+#           3.  The specified QoS profile needs to be created prior to
+#               executing this script through the following command:
+#
+#                  "create qosprofile <qos_profile_name>"
+#
+#           4.  Appropriately configured Dynamic Host Configuration Protocol
+#               (DHCP) server
+#
+#           5.  Appropriately configured Trivial File Transfer Protocol
+#               (TFTP) server
+#
+#           6.  Appropriately configured Call Server.
+#
+#           See "ExtremeXOS Concepts Guide" for more information.
+#
+# NOTE:     There is a restriction that the number of characters in a 
+#           Universal Port Manager (UPM) profile be less than 5000
+#           characters.  This example EXCEEDS that limit.  It is recommended
+#           that the comment lines be deleted prior to customizing and 
+#           installing this example as a UPM profile.
+#
+#############################################################################
+#@DetailDescriptionEnd
+
+#############################################################################
+# Variable definitions
+#############################################################################
+
+# @VariableFieldLabel "If this script encounters errors, do you wish to abort or ignore?"
+set var clierrormode abort
+
+# @VariableFieldLabel "Voice VLAN Name (default = voice)"
+set var voicevlan voice
+
+# @VariableFieldLabel "Enable SNMP Traps on LLDP Events (true or false)"
+set var enabletrap false
+
+# @VariableFieldLabel "Differentiated Services Code Point Value (default = 46)"
+set var dscpvalue 46
+
+# @VariableFieldLabel Assign Port to QoS Profile (true or false)"
+set var assignqos false
+
+# @VariableFieldLabel "SummitStack(TM) Switch (yes or no)"
+set var sstack no
+
+# @MetaDataEnd
+
+#############################################################################
+# Generic VoIP LLDP Device Provisioning
+#############################################################################
+
+create log entry "Starting Generic VoIP LLDP Device Provisioning"
+
+if (!$match($clierrormode,ignore)) then
+  configure cli mode scripting ignore-error
+  create log entry "CLI mode set for Ignore on Error"
+else
+  configure cli mode scripting abort-on-error
+  create log entry "CLI mode set for Abort on Error"
+endif
+
+#############################################################################
+# Determine if "Device Detect" on Port
+#############################################################################
+
+if (!$match($EVENT.NAME,DEVICE-DETECT)) then
+
+  create log entry "LLDP Device Detected on Port"
+
+#############################################################################
+# Add Port to Voice VLAN Using Tagged Addressing
+#############################################################################
+
+  configure vlan $voicevlan add ports $EVENT.USER_PORT tagged
+
+#############################################################################
+# Determine SNMP Trap Settings
+#############################################################################
+
+  if (!$match($enabletrap,true)) then
+    create log entry "Enabling SNMP Traps for LLDP on port"
+    enable snmp traps lldp ports $EVENT.USER_PORT
+    enable snmp traps lldp-med ports $EVENT.USER_PORT
+  else
+    create log entry "Disabling SNMP Traps for LLDP on port"
+    disable snmp traps lldp ports $EVENT.USER_PORT
+    disable snmp traps lldp-med ports $EVENT.USER_PORT
+  endif
+
+#############################################################################
+# Configure Port for Link Layer Discovery Protocol (LLDP)
+#############################################################################
+
+  create log entry "Configuring LLDP on port"
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific med capabilities
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific dot1 vlan-name vlan $voicevlan
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific med policy application voice vlan $voicevlan dscp $dscpvalue
+
+#############################################################################
+# Configure POE Setting Per Device Requirements
+#############################################################################
+
+  create log entry "Configuring POE"
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific med power-via-mdi
+  configure inline-power operator-limit $EVENT.DEVICE_POWER ports $EVENT.USER_PORT
+
+#############################################################################
+# Assign Port to QoS Profile
+#############################################################################
+
+  if (!$match(assignqos,true)) then
+
+    if (!$match($sstack,no)) then
+      create log entry "Assigning port to QoS profile QP7"
+      configure ports $EVENT.USER_PORT qosprofile QP7
+    else
+      create log entry "Assigning port to QoS profile QP5" 
+      configure ports $EVENT.USER_PORT qosprofile QP5
+    endif
+
+  endif
+
+#############################################################################
+# Determine if "Device Undetect" on Port
+#############################################################################
+
+else
+  
+  if (!$match(EVENT.NAME,DEVICE-UNDETECT) && $match($EVENT.DEVICE_IP,0.0.0.0)) then
+
+    create log entry "LLDP Device Undected on Port"
+
+    if (!$match($enabletrap,true)) then
+      create log entry "Disabling SNMP Traps for LLDP on port" 
+      disable snmp traps lldp ports $EVENT.USER_PORT
+      disable snmp traps lldp-med ports $EVENT.USER_PORT
+    endif
+
+#############################################################################
+# Reset LLDP Configuration on Port to Default
+#############################################################################
+
+    create log entry "Unconfiguring LLDP on port"
+    unconfigure lldp ports $EVENT.USER_PORT
+
+#############################################################################
+# Reset POE Setting on Port to Default
+#############################################################################
+
+    create log entry "Resetting POE on port"
+    unconfigure inline-power operator-limit ports $EVENT.USER_PORT
+
+#############################################################################
+# Reset QoS Setting on Port
+#############################################################################
+
+    if (!$match(configqos,true)) then
+      create log entry "Unconfiguring QoS"
+      unconfigure qosprofile ports $EVENT.USER_PORT
+    endif
+
+  else
+
+#############################################################################
+# Spurious Event on IP Address 0.0.0.0 - Do Nothing
+#############################################################################
+
+    create log entry "Do Nothing 0.0.0.0"
+    create log entry $EVENT.TIME
+
+  endif
+
+endif
+
+create log entry "End Generic VoIP LLDP Device Provisioning"
+ 
+disable cli scripting

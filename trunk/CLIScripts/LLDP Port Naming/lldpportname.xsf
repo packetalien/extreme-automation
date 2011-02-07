@@ -1,0 +1,45 @@
+enable cli scripting
+# @METADATASTART
+#@DetailDescriptionStart
+#############################################################################
+#
+# Script        	: Auto-VLAN Provisioning 
+# Revision      	: 1.1
+# EXOS Version(s)  	: 12.3.x and Newer
+# Last Updated  	: April 19, 2010
+#
+# Purpose: 
+# This installed script queries the ports attached using LLDP. The LLDP response is used to assign 
+# the switch port name
+#
+# Author			: Extreme Extensibility Team
+# Contact			: info@extremenetworks.com
+# Contact			: www.ethernation.net (ExtremeXOS Forums)
+###############################################################################
+#  Change Log
+#
+#  10 February 2010: Original Script Created
+#  16 April 2010: Translated from French to English
+###############################################################################
+#@DetailDescriptionEnd
+# Please configure number of ports
+
+set var number_port 24
+set var computer 1
+
+while ($computer < $number_port) do
+        set var CLI.OUT " "
+        show lldp port $computer neighbors detailed
+        set var base_list1 $TCL(split ${CLI.OUT} "\n" )
+        set var research $TCL(lsearch -glob $base_list1 *System*)
+        if ($Recherche != -1) then
+                set var line $TCL(lindex $base_list1 $research)
+                set var list_simulscan $TCL(split ${line} *"*)
+                set var simulscan $TCL(lindex $list_simulscan 1)
+                configure port $computer display-string $simulscan
+                set var screen  $TCL(concat "Port : " $computer " - Machine" $simulscan)
+                create log entry "$screen ."
+                show var screen
+        endif
+        set var computer ($computer + 1)
+endwhile

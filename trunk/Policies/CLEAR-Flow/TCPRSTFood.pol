@@ -1,0 +1,32 @@
+#
+# Begin TCPRSTFlood.pol
+# 
+# TCP RST Flood ACLs.
+entry tcpRSTFloodacl {
+	if {protocol TCP;
+		tcp-flags RST;}
+	then {count tcpRSTcounter; }}
+# TCP RST Flood CLEAR-Flow rules.
+entry tcpRSTFloodflowMAX {
+	if {delta tcpRSTcounter > 100000;
+		period 2; 
+		hysteresis 99000;}
+	then {syslog "TCP RST FLOOD traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile tcpRSTFloodacl QP3;
+		}
+	else {syslog "TCP RST FLOOD traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile tcpRSTFloodacl QP1;
+		}}
+entry tcpRSTFloodflowMin {
+	if {delta tcpRSTcounter > 1000;
+		period 2;
+		hysteresis 9000;}
+	then {syslog "TCP RST FLOOD traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add tcpRSTFloodacl;
+		}
+	else {syslog "TCP RST FLOOD traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete tcpRSTFloodacl;
+		}}
+#
+# End TCPRSTFlood.pol
+#

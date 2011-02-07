@@ -1,0 +1,162 @@
+#
+# Module devmgr configuration.
+#
+configure sys-recovery-level switch reset
+
+#
+# Module vlan configuration.
+#
+configure vlan default delete ports 1-26
+create vlan "red"
+configure ports 25 auto off speed 10000 duplex full 
+configure ports 26 auto off speed 10000 duplex full 
+configure vlan red add ports 1-24 untagged  
+
+#
+# Module fdb configuration.
+#
+
+#
+# Module rtmgr configuration.
+#
+
+#
+# Module mcmgr configuration.
+#
+
+#
+# Module aaa configuration.
+#
+
+#
+# Module acl configuration.
+#
+
+
+
+
+#
+# Module cfgmgr configuration.
+#
+
+#
+# Module dosprotect configuration.
+#
+
+#
+# Module eaps configuration.
+#
+
+#
+# Module edp configuration.
+#
+
+#
+# Module elrp configuration.
+#
+enable elrp-client
+configure elrp-client periodic red ports all interval 2 log-and-trap
+
+#
+# Module ems configuration.
+#
+create log filter LogTrigger_ELRP
+configure log filter LogTrigger_ELRP add events ELRP.Report.Message 
+create log target upm ELRP_LoopProtect
+enable log target upm ELRP_LoopProtect
+configure log target upm ELRP_LoopProtect filter LogTrigger_ELRP severity Warning only
+configure log target upm ELRP_LoopProtect match Any
+configure syslog add 192.168.220.51:514 vr VR-Mgmt local0
+enable log target syslog 192.168.220.51:514 vr VR-Mgmt local0
+configure log target syslog 192.168.220.51:514 vr VR-Mgmt local0 filter DefaultFilter severity Debug-Data
+configure log target syslog 192.168.220.51:514 vr VR-Mgmt local0 match Any
+
+#
+# Module epm configuration.
+#
+
+#
+# Module esrp configuration.
+#
+
+#
+# Module etmon configuration.
+#
+
+#
+# Module hal configuration.
+#
+
+#
+# Module ipSecurity configuration.
+#
+
+#
+# Module lldp configuration.
+#
+
+#
+# Module msdp configuration.
+#
+
+#
+# Module netLogin configuration.
+#
+
+#
+# Module netTools configuration.
+#
+
+#
+# Module poe configuration.
+#
+
+#
+# Module rip configuration.
+#
+
+
+#
+# Module ripng configuration.
+#
+
+#
+# Module snmpMaster configuration.
+#
+
+
+enable snmp access snmp-v1v2c
+enable snmp access snmpv3
+enable snmpv3 default-group
+enable snmpv3 default-user
+
+#
+# Module stp configuration.
+#
+configure mstp region 00049627c577
+
+#
+# Module telnetd configuration.
+#
+
+#
+# Module tftpd configuration.
+#
+
+#
+# Module thttpd configuration.
+#
+
+#
+# Module upm configuration.
+#
+create upm profile ELRP_LoopProtect
+create log entry UPM-EMS-EVENT-LOG-DATE:$EVENT.LOG_DATE
+create log entry UPM-EMS-EVENT-LOG-TIME:$EVENT.LOG_TIME
+create log entry UPM-EMS-LOG-FILTER-NAME:$EVENT.LOG_FILTER_NAME
+create log entry UPM-EMS-LOG-SEVERITY:$EVENT.LOG_SEVERITY
+create log entry "ELRP has detected a loop on port($EVENT.LOG_PARAM_7)"
+create log entry "Executing Dynamic Script ELRP_LoopProtect to disable port($EVENT.LOG_PARAM_7)"
+disable port $EVENT.LOG_PARAM_7
+
+.

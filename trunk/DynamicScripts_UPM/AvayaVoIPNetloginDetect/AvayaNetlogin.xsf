@@ -1,0 +1,139 @@
+enable cli scripting
+
+# @METADATASTART
+#@DetailDescriptionStart
+#
+# Script        : AvayaVoIPNetloginDetect
+# Revision      : 1.3
+# Last Updated  : August 5, 2008
+#
+# Purpose:  This profile is an example on how one would configure network
+#           parameters for Avaya VoIP phones supporting both LLDP and 802.1x
+#           user authentication on ExtremeXOS(TM) edge switches.  Instead of
+#           using Dynamic Host Configuration Protocol (DHCP) options, the
+#           port is provisioned using LLDP paramenters developed jointly
+#           by Extreme Networks and Avaya.
+#
+#			A ReadMe file for this widget is available at:
+#			http://www.extremenetworks.com/solutions/widget-central/
+#
+#@DetailDescriptionEnd
+
+# Variable definitions
+
+# @VariableFieldLabel "If this script encounters errors, do you wish to abort or ignore?"
+set var clierrormode abort
+
+# @VariableFieldLabel "Voice VLAN Name (default = voice)"
+set var voicevlan voice
+
+# @VariableFieldLabel "Enable SNMP Traps on LLDP Events (true or false)"
+set var enabletrap true
+
+# @VariableFieldLabel "Differentiate Services Code Point Value (default = 46)"
+set var dscpvalue 46
+
+# @VariableFieldLabel "Call Server IP Address"
+set var callserver 192.45.95.100
+
+# @VariableFieldLabel File Server IP Address"
+set var fileserver 192.45.10.250
+
+# @VariableFieldLabel "Assign Port to QoS Profile (true or false)"
+set var assignqos true
+
+# @VariableFieldLabel "SummitStack(TM) Switch (yes or no)"
+set var sstack no
+
+# @MetaDataEnd
+
+# Avaya VoIP LLDP Device Provisioning
+
+create log entry "Starting Avaya VoIP Device Provisioning"
+
+if (!$match($clierrormode,ignore)) then
+  configure cli mode scripting ignore-error
+  create log entry "CLI mode set for Ignore on Error"
+else
+  configure cli mode scripting abort-on-error
+  create log entry "CLI mode set for Abort on Error"
+endif
+
+# Determine if "Device Authenticated" on Port
+
+if (!$match($EVENT.NAME,USER-AUTHENTICATED)) then
+
+  create log entry "Avaya Device Authenticated on Port"
+
+# Determine SNMP Trap Settings
+
+  if (!$match($enabletrap,true)) then
+    create log entry "Enabling SNMP Traps for LLDP on port"
+    enable snmp traps lldp ports $EVENT.USER_PORT
+    enable snmp traps lldp-med ports $EVENT.USER_PORT
+  else
+    create log entry "Disabling SNMP Traps for LLDP on port"
+    disable snmp traps lldp ports $EVENT.USER_PORT
+    disable snmp traps lldp-med ports $EVENT.USER_PORT
+  endif
+
+# Configure Port for Link Layer Discovery Protocol (LLDP)
+
+  create log entry "Configuring LLDP on port"
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific med capabilities
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific dot1 vlan-name vlan $voicevlan
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific med policy application voice vlan $voicevlan dscp $dscpvalue
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific avaya-extreme call-server $callserver
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific avaya-extreme file-server $fileserver
+  configure lldp ports $EVENT.USER_PORT advertise vendor-specific avaya-extreme dot1q-framing tagged
+
+# Assign Port to QoS Profile
+
+  if (!$match($assignqos,true)) then
+
+    if (!$match($sstack,no)) then
+      create log entry "Assigning port to QoS profile QP7"
+      configure ports $EVENT.USER_PORT qosprofile QP7
+    else
+      create log entry "Assigning port to QoS profile QP5" 
+      configure ports $EVENT.USER_PORT qosprofile QP5
+    endif
+
+  endif
+
+# Rename Port Label
+  configure port $EVENT.USER_PORT display-string $EVENT.USER_PORT-VOIP
+  
+# Determine if "Device Unauthenticated" on Port
+
+else
+  
+  if (!$match($EVENT.NAME,USER-UNAUTHENTICATED)) then
+
+    create log entry "Avaya Device Unauthenticated on Port"
+
+    if (!$match($enabletrap,true)) then
+      create log entry "Disabling SNMP Traps for LLDP on port" 
+      disable snmp traps lldp ports $EVENT.USER_PORT
+      disable snmp traps lldp-med ports $EVENT.USER_PORT
+    endif
+
+# Reset LLDP Configuration on Port to Default
+
+    create log entry "Unconfiguring LLDP on port"
+    unconfigure lldp ports $EVENT.USER_PORT
+
+# Reset QoS Setting on Port
+
+    if (!$match($assignqos,true)) then
+      create log entry "Unconfiguring QoS"
+      configure ports $EVENT.USER_PORT qosprofile none
+    endif
+    unconfigure port $EVENT.USER_PORT display-string
+  endif
+
+endif
+
+create log entry "End Avaya VoIP Device Provisioning"
+ 
+disable cli scripting

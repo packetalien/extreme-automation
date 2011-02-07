@@ -1,0 +1,86 @@
+# Mail Services ACLs.
+entry smtp25 {
+	if {	protocol TCP;
+		destination-port 25;}
+	then {count smtp25counter;}}
+entry pop110 {
+	if {	protocol TCP;
+		destination-port 109 - 110;}
+	then {count pop110counter;}}
+entry imap143 {
+	if {	protocol TCP;
+		destination-port 143;}
+	then {count imap143counter;}}
+# Uncomment the defaultdeny ACL to Block all other ports,
+# Otherwise, all other traffic will be allowed through.
+#entry defaultdeny {
+#	if {} then 
+#		{deny;
+#		count defaultdeny;}}
+#
+# SMTP rule.
+entry smtp25flowMax {
+	if {delta smtp25counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "SMTP traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile smtp25 QP3;
+		}
+	else {syslog "SMTP traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile smtp25 QP1;
+		}}
+entry smtp25flowMin {
+	if {delta smtp25counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "SMTP traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add smtp25;
+		}
+	else {syslog "SMTP traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete smtp25;
+		}}
+# POP Rule.
+entry pop110flowMax {
+	if {delta pop110counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "POP traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile pop110 QP3;
+		}
+	else {syslog "POP traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile pop110 QP1;
+		}}
+entry pop110flowMin {
+	if {delta pop110counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "POP traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add pop110;
+		}
+	else {syslog "POP traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete pop110;
+		}}
+# IMAP Rule.
+entry imap143flowMax {
+	if {delta imap143counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "IMAP traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile imap143 QP3;
+		}
+	else {syslog "IMAP traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile imap143 QP1;
+		}}
+entry imap143flowMin {
+	if {delta imap143counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "IMAP traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add imap143;
+		}
+	else {syslog "IMAP traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete imap143;
+		}}
+#
+# End MailServices.pol
+#

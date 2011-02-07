@@ -1,0 +1,28 @@
+# @MetaDataStart
+# @ScriptDescription "This is a profile template for configuring VOIP using user authentication events."
+# @VariableFieldLabel "Avaya phone call server IP address"
+set var acm 192.168.100.100
+# @VariableFieldLabel "Avaya phone file server IP address"
+set var fileserver 192.168.200.100
+# @VariableFieldLabel "Voice VLAN name"
+set var voicevlan voice
+# @MetaDataEnd
+
+if (!$match($EVENT.NAME,USER-AUTHENTICATED)) then
+	create log entry Dot1x-VoIP_START_Port_$(EVENT.USER_PORT)	
+	create log entry Dot1x-VoIP_Port_$(EVENT.USER_PORT)
+enable lldp port $EVENT.USER_PORT
+configure lldp port $EVENT.USER_PORT advertise vendor-specific med capabilities
+configure lldp port $EVENT.USER_PORT advertise vendor-specific med power-via-mdi
+configure lldp port $EVENT.USER_PORT advertise vendor-specific dot1 vlan-name vlan $voicevlan 
+configure lldp port $EVENT.USER_PORT advertise vendor-specific avaya-extreme dot1q-framing tag
+configure lldp port $EVENT.USER_PORT advertise vendor-specific avaya-extreme call-server $acm
+configure lldp port $EVENT.USER_PORT advertise vendor-specific avaya-extreme file-server $fileserver
+endif
+
+if (!$match($EVENT.NAME,USER-UNAUTHENTICATED)) then
+	create log entry Disconnect_Dot1x-VoIP_START_Port_$(EVENT.USER_PORT)	
+unconfigure lldp port $EVENT.USER_PORT
+endif
+
+	create log entry Dot1x-VoIP_END_Port_$(EVENT.USER_PORT)

@@ -1,0 +1,201 @@
+enable cli scripting
+
+# @METADATASTART
+#@DetailDescriptionStart
+##############################################################################
+# Extreme Networks(R) CLI Scripting Library
+#
+# Script        : VoIPOverlay
+# Revision      : 1.1
+# Last Updated  : April 3, 2008
+#
+# Purpose:  This script is an example on how one would enable a port on an
+#           ExtremeXOS(TM) edge switch for voice operation.  This example 
+#           provides a static example for a port or set of ports on the
+#           switch.  For dynamic provisioning of a voice port based on an
+#           event trigger, see the Universal Port operation examples.
+#
+#           The following voice operations are performed on the switch for a
+#           set of voice ports:
+#
+#           1.  Optionally creates a voice VLAN and adds the specified ports
+#               using either tagged or untagged addressing.
+#
+#           2.  Optionally enables and configures Link Layer Discovery 
+#               Protocol (LLDP) on the port(s).  Additionally, one can 
+#               specify the Avaya specific LLDP configuration
+#
+#           3.  Optionally creates the appropriate QoS profile and configures
+#               this profile for voice operation setting DSCP value.
+#     
+##############################################################################
+#@DetailDescriptionEnd
+
+##############################################################################
+# Variable Definitions
+##############################################################################
+
+# @VariableFieldLabel "If this script encounters errors, do you wish to abort or ignore?"
+set var clierrormode abort
+
+# @VariableFieldLabel "Create a new VLAN for Voice traffic? (yes or no)"
+set var createvlan yes
+
+# @VariableFieldLabel "Name of voice VLAN (default = voice)"
+set var voicevlan voice
+
+# @VariableFieldLabel "Voice VLAN 802.1q tag value (default = 200)"
+set var voicevlantag 200
+
+# @VariableFieldLabel "Add Ports to Voice VLAN? (Select no if using Universal Port)"
+set var addports yes
+
+# @VariableFieldLabel "Use Tag Addressing for Ports on Voice VLAN? (yes or no)"
+set var tagports no
+
+# @VariableFieldLabel "Voice VLAN device ports. (Uplinks need to be manually configured)"
+set var voiceports 22,23
+
+# @VariableFieldLabel "Remove ports from previous VLAN? (Required if ports are members of another VLAN as untagged)"
+set var removevlan yes
+
+# @VariableFieldLabel "Name of VLAN to remove untagged ports from. (Required if ports are members of another VLAN as untagged)"
+set var removevlanname default
+
+# @VariableFieldLabel "Enable LLDP (802.1ab) on Voice ports? (yes or no)"
+set var enablelldp yes
+
+# @VariableFieldLabel "Send Extreme-Avaya specific LLDP values? (yes or no)"
+set var avaya yes
+
+# @VariableFieldLabel "Avaya Call Server IP Address?"
+set var callserver 192.168.20.30
+
+# @VariableFieldLabel "Avaya File Server IP Address?"
+set var fileserver 192.168.20.200
+
+# @VariableFieldLabel "Setup QoS and DiffServ mapping for voice? (yes or no)"
+set var diffserv yes
+
+# @VariableFieldLabel "Create QoS queues? (yes or no)"
+set var createqos yes
+
+# @VariableFieldLabel "SummitStack(TM) switch? (yes or no)"
+set var sstack yes
+
+# @VariableFieldLabel "Voice Application DSCP value. (default = 46)"
+set var dscpvalue 46
+
+# @MetaDataEnd
+
+##############################################################################
+# VoIP Overlay Operation
+##############################################################################
+
+create log entry "Starting VoIP Overlay Operation"
+
+if (!$match($clierrormode,ignore)) then
+  configure cli mode scripting ignore-error
+  create log entry "CLI mode set for Ignore on Error"
+else
+  configure cli mode scripting abort-on-error
+  create log entry "CLI mode set for Abort on Error"
+endif
+
+##############################################################################
+# Voice VLAN Creation
+##############################################################################
+
+if (!$match($createvlan,yes)) then
+  create vlan $voicevlan
+  configure vlan $voicevlan tag $voicevlantag
+  create log entry "Voice VLAN Created"
+else
+  create log entry "No Voice VLAN Created"
+endif
+
+if (!$match($addports,yes)) then
+
+  if (!$match($tagports,yes)) then
+    configure vlan $voicevlan add ports $voiceports tagged
+    create log entry "Ports Added To Voice VLAN as Tagged"
+  else
+
+    if (!$match($removevlan,yes)) then
+      configure vlan $removevlanname delete ports $voiceports
+      create log entry "Ports removed from VLAN"
+    endif
+
+    configure vlan $voicevlan add ports $voiceports untagged 
+    create log entry "Ports Added To Voice VLAN as Untagged"
+  endif
+
+else
+
+  create log entry "No Ports Added To Voice VLAN"
+
+endif
+
+##############################################################################
+# LLDP Configuration
+##############################################################################
+
+if (!$match($enablelldp,yes)) then
+
+    create log entry "Configuring LLDP on port"
+    enable lldp ports $voiceports
+    configure lldp ports $voiceports advertise vendor-specific med capabilities
+    configure lldp ports $voiceports advertise vendor-specific dot1 vlan-name vlan $voicevlan
+    configure lldp ports $voiceports advertise vendor-specific med policy application voice vlan $voicevlan dscp $dscpvalue
+
+    if (!$match($avaya,yes)) then
+
+      create log entry "Configuring Avaya Specific LLDP parameters"
+      configure lldp port $voiceports advertise vendor-specific avaya-extreme call-server $callserver
+      configure lldp port $voiceports advertise vendor-specific avaya-extreme file-server $fileserver
+      configure lldp port $voiceports advertise vendor-specific avaya-extreme dot1q-framing tag
+
+    endif
+
+endif
+
+##############################################################################
+# QoS Configuration
+##############################################################################
+
+if (!$match($diffserv,yes)) then
+  create log entry "Configure DSCP Value to QoS Profiles"
+
+  if (!$match($createqos,yes)) then
+    create log entry "Creating QoS Profiles"
+
+    if (!$match($sstack,no)) then
+      create qosprofile QP7
+      config diffserv examination code-point $dscpvalue QP7
+      create log entry "DSCP value set to Newly Created QP7"
+    else
+      create qosprofile QP5
+      config diffserv examination code-point $dscpvalue QP5
+      create log entry "DSCP value set to Newly Created QP5"
+    endif
+
+  else
+    create log entry "Setting DSCP Value to Existing QoS Profile"
+
+    if (!$match($sstack,no)) then
+      config diffserv examination code-point $dscpvalue QP7
+      create log entry "DSCP value set to QP7"
+    else
+      config diffserv examination code-point $dscpvalue QP5
+      create log entry "DSCP value set to QP5"
+    endif
+
+  endif
+
+  enable diffserv examination ports all
+
+endif
+
+create log entry "End VoIP Overlay Operation"
+
+disable cli scripting

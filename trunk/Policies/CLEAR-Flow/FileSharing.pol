@@ -1,0 +1,236 @@
+# File sharing ACLs.
+entry tcp135 {
+	if {	protocol TCP;
+		destination-port 135;}
+	then {count tcp135counter;}}
+entry udp135 {
+	if {	protocol UDP;
+		destination-port 135;}
+	then {count udp135counter;}}
+entry udp137 {
+	if {	protocol UDP;
+		destination-port 137;}
+	then {count udp137counter;}}
+entry udp138 {
+	if {	protocol UDP; 
+		destination-port 138;}
+	then {count udp138counter;}}
+entry tcp139 {
+	if {	protocol TCP;
+		destination-port 139;}
+	then {count tcp139counter;}}
+entry tcp445 {
+	if {	protocol TCP;
+		destination-port 445;}
+	then {count tcp445counter;}}
+entry udp445 {
+	if {	protocol UDP;
+		destination-port 445;}
+	then {count udp445counter;}}
+entry tcp427 {
+	if {	protocol TCP;
+		destination-port 427;}
+	then {count tcp427counter;}}
+entry tcp548 {
+	if {	protocol TCP;
+		destination-port 548;}
+	then {count tcp548counter;}}
+# Uncomment the defaultdeny ACL to Block all other ports,
+# Otherwise, all other traffic will be allowed through.
+#entry defaultdeny {
+#	if {} then 
+#		{deny;
+#		count defaultdeny;}}
+#
+# RPC portmap CLEAR-FLow rule.
+entry tcp135flowMax {
+	if {delta tcp135counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp135 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp135 QP1;
+		}}
+entry tcp135flowMin {
+	if {delta tcp135counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp135;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp135;
+		}}
+#
+entry udp135flowMax {
+	if {delta udp135counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile udp135 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile udp135 QP1;
+		}}
+entry udp135flowMin {
+	if {delta udp135counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add udp135;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete udp135;
+		}}
+#
+entry udp137flowMax {
+	if {delta udp137counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile udp137 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile udp137 QP1;
+		}}
+entry udp137flowMin {
+	if {delta udp137counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add udp137;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete udp137;
+		}}
+#
+entry udp138flowMax {
+	if {delta udp138counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile udp138 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile udp138 QP1;
+		}}
+entry udp138flowMin {
+	if {delta udp138counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add udp138;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete udp138;
+		}}
+#
+entry tcp139flowMax {
+	if {delta tcp139counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp139 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp139 QP1;
+		}}
+entry tcp139flowMin {
+	if {delta tcp139counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp139;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp139;
+		}}
+#
+entry tcp445flowMax {
+	if {delta tcp445counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp445 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp445 QP1;
+		}}
+entry tcp445flowMin {
+	if {delta tcp445counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp445;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp445;
+		}}
+#
+entry udp445flowMax {
+	if {delta udp445counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile udp445 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile udp445 QP1;
+		}}
+entry udp445flowMin {
+	if {delta udp445counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add udp445;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete udp445;
+		}}
+#
+entry tcp427flowMax {
+	if {delta tcp427counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp427 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp427 QP1;
+		}}
+entry tcp427flowMin {
+	if {delta tcp427counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp427;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp427;
+		}}
+#
+entry tcp548flowMax {
+	if {delta tcp548counter > 1000;
+		period 1;
+		hysteresis 900;}
+	then {syslog "File sharing traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp548 QP3;
+		}
+	else {syslog "File sharing traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit on VLAN $vlanName" WARN;
+		qosprofile tcp548 QP1;
+		}}
+entry tcp548flowMin {
+	if {delta tcp548counter > 100;
+		period 1;
+		hysteresis 99;}
+	then {syslog "File sharing traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for VLAN $vlanName" WARN;
+		mirror add tcp548;
+		}
+	else {syslog "File sharing traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from VLAN $vlanName" WARN;
+		mirror delete tcp548;
+		}}
+#
+# End FileSharing.pol
+#

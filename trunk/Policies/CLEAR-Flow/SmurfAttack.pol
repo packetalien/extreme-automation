@@ -1,0 +1,33 @@
+#
+# Begin SmurfAttack.pol
+# 
+# Smurf Attack ACL.
+entry smurfacl {
+	if {	protocol ICMP;
+ 		icmp-type echo-request;
+		ethernet-destination-address ff:ff:ff:ff:ff:ff;}
+	then {	count smurfcounter;}}
+# Smurf Attack CLEAR-Flow rules.
+entry smurfflowMax {
+if { 	delta smurfcounter > 1000 ;
+		period 1; 
+		hysteresis 990;}
+	then {syslog "SMURF ATTACK traffic exceeded Maximum Threshold, clearFlow rule $ruleName, applying rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile smurfacl QP3;
+		}
+	else {syslog "SMURF ATTACK traffic dropped below Maximum Threshold, clearFlow rule $ruleName, removing rate limit for $policyName on VLAN $vlanName" WARN;
+		qosprofile smurfacl QP1;
+		}}
+entry smurfflowMin {
+	if {delta smurfcounter > 10;
+		period 1;
+		hysteresis 8;}
+	then {syslog "SMURF ATTACK traffic exceeded Minimum Threshold, clearFlow rule $ruleName, mirroring traffic for $policyName on VLAN $vlanName" WARN;
+		mirror add smurfacl;
+		}
+	else {syslog "SMURF ATTACK traffic dropped below Minimum Threshold, clearFlow rule $ruleName, removing mirror from $policyName on VLAN $vlanName" WARN;
+		mirror delete smurfacl;
+		}}
+#
+# End SmurfAttack.pol
+#

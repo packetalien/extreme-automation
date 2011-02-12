@@ -3,7 +3,7 @@ enable cli scripting
 #@DetailDescriptionStart
 #############################################################################
 #
-# Script        	: Auto-VLAN Provisioning 
+# Script        	: QoS-Configuration 
 # Revision      	: 1.1
 # EXOS Version(s)  	: 12.0.x and Newer
 # Last Updated  	: April 21, 2010

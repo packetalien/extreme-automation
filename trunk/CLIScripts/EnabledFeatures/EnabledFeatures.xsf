@@ -5,8 +5,8 @@ enable cli scripting
 # Extreme Networks(R) CLI Profile Library
 #
 # Script        : EnabledFeatures
-# Revision      : 1.0
-# Last Updated  : May 27, 2008
+# Revision      : 1.1
+# Last Updated  : February 24, 2011
 #
 # Purpose:  This script identifies the features enabled on a switch.  The list
 # of features is discovered by a series of if/then else statements and includes 
@@ -21,12 +21,11 @@ enable cli scripting
 ###############################################################################
 #@DetailDescriptionEnd
 #
-# @VariableFieldLabel "If this script encounters errors, do you wish to abort 
-or ignore?"
+# @VariableFieldLabel "If this script encounters errors, do you wish to abort or ignore?"
 set var ynCliModeAbortIgnore abort
 # @SeparatorLine
 
-debug cli disable output
+# debug cli disable output
 ###########"aaa"
 set var CLI.OUT " "
 show configuration aaa detail

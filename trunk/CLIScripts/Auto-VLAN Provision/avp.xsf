@@ -4,9 +4,9 @@ enable cli scripting
 #############################################################################
 #
 # Script        	: Auto-VLAN Provisioning 
-# Revision      	: 1.1
+# Revision      	: 1.2
 # EXOS Version(s)  	: 12.3.x and Newer
-# Last Updated  	: April 19, 2010
+# Last Updated  	: March 7, 2011
 #
 # Purpose: 
 # This script version will provision auto-configure to run on default bootup.
@@ -26,6 +26,8 @@ enable cli scripting
 #	19 April 2010: added comment line
 #	21 April 2010: Changed to default.xsf configuration
 #	21 April 2010: Added Wait command
+#   7 March 2011: Changed header date and version for SVN Change
+#
 ###############################################################################
 #@DetailDescriptionEnd
 

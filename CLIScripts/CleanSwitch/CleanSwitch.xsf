@@ -33,6 +33,9 @@ enable cli scripting
 # Remove all files from the user directory
 ###############################################################################
 
+create log entry "clean switch ran"
+
+
 rm *
 clear log messages nvram
 clear log static

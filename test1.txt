@@ -1,5 +1,5 @@
-#$Id$
-#$Author$
+$Id$
+$Author$
 test 1
 edit 2
 #r22
